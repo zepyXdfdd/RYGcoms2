@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORION Distance Tracker v2</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#06060e;--card:#0a0a16;--card-h:#07070f;--brd:#161628;--brd2:#252545;
+      --t1:#e0e0f0;--t2:#8888aa;--t3:#555570;
+      --red:#ff3d50;--rg:rgba(255,61,80,.15);
+      --yel:#ffb800;--yg:rgba(255,184,0,.15);
+      --grn:#00e878;--gg:rgba(0,232,120,.15);--ga:#00e87833;
+      --blu:#00a0ff;--bg2:rgba(0,160,255,.15);
+      --r:10px;--rs:6px
+    }
+    body{background:var(--bg);color:var(--t1);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+    .navbar{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;background:var(--card);border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:500}
+    .nav-brand{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;letter-spacing:3px}
+    .nav-logo{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--grn),var(--blu));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#000}
+    .nav-pills{display:flex;align-items:center;gap:12px}
+    .pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:600}
+    .pill.live{background:var(--gg);color:var(--grn)}.pill.off{background:rgba(255,255,255,.05);color:var(--t3)}
+    .pill .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .overlay{position:fixed;inset:0;background:rgba(4,4,10,.98);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:1000;padding:20px}
+    .overlay.hidden{display:none}
+    .hero-t{font-size:42px;font-weight:900;letter-spacing:8px;background:linear-gradient(135deg,var(--grn),var(--blu));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-s{color:var(--t3);font-size:13px;letter-spacing:2px}
+    .start-btn{width:175px;height:175px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#0c1a14,#060610);border:3px solid var(--grn);color:var(--grn);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:all .3s;box-shadow:0 0 40px var(--ga),inset 0 0 30px var(--ga);position:relative}
+    .start-btn:hover{transform:scale(1.05);box-shadow:0 0 60px var(--ga),inset 0 0 40px var(--ga)}
+    .start-btn::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid var(--ga);animation:ring 2s infinite}
+    @keyframes ring{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.08);opacity:0}}
+    .start-info{max-width:560px;text-align:center;color:var(--t2);font-size:14px;line-height:2}
+    .start-info b{color:var(--grn)}.start-info .r{color:var(--red)}.start-info .y{color:var(--yel)}
+    .ex-box{background:#0c0c18;padding:14px 28px;border-radius:var(--r);margin:10px auto;font-family:'Consolas',monospace;font-size:20px;border:1px solid var(--brd);display:inline-block}
+    .ex-box .br{color:#666}.ex-box .nm{color:var(--grn);font-weight:bold}.ex-box .na{color:var(--t2)}
+    .role-selector{display:flex;gap:16px;margin-top:10px}
+    .role-btn{padding:16px 32px;border-radius:var(--r);border:2px solid var(--brd);background:var(--card);color:var(--t2);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;min-width:180px}
+    .role-btn:hover{border-color:var(--grn);color:var(--grn)}
+    .role-btn .role-icon{font-size:32px;margin-bottom:8px}
+    .role-btn .role-sub{font-size:10px;color:var(--t3);margin-top:4px;font-weight:400}
+    .app{display:grid;grid-template-columns:1fr 340px;gap:16px;padding:16px;max-width:1600px;margin:0 auto}
+    @media(max-width:900px){.app{grid-template-columns:1fr}}
+    .side{display:flex;flex-direction:column;gap:14px}
+    .card{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+    .card:last-child{margin-bottom:0}
+    .card-h{padding:11px 16px;background:var(--card-h);border-bottom:1px solid var(--brd);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;color:var(--t2)}
+    .card-b{padding:16px}
+    .mode-bar{display:flex;gap:6px;margin-bottom:12px}
+    .mode-btn{flex:1;padding:10px;background:rgba(255,255,255,.02);border:2px solid var(--brd);color:var(--t3);border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+    .mode-btn .mdot{width:10px;height:10px;border-radius:50%;border:2px solid currentColor}
+    .mode-btn.act-dist{border-color:var(--grn);color:var(--grn);background:var(--ga)}
+    .mode-btn.act-dist .mdot{background:var(--grn)}
+    .mode-btn.act-dir{border-color:var(--blu);color:var(--blu);background:var(--bg2)}
+    .mode-btn.act-dir .mdot{background:var(--blu)}
+    .video-container{position:relative;width:100%;background:#000;overflow:hidden;border:2px solid var(--brd);border-radius:var(--rs)}
+    .video-container video{display:block;width:100%;height:100%}
+    .drag-overlay{position:absolute;inset:0;cursor:crosshair;z-index:10}
+    .sel-box{position:absolute;pointer-events:none;display:none;z-index:5;border-radius:2px}
+    .sel-box.show{display:block}
+    .sel-box.dragging{border-style:dashed!important}
+    .sel-box.dist-sel{border:2px solid var(--grn);background:rgba(0,232,120,.08);box-shadow:0 0 12px var(--ga)}
+    .sel-box.dir-sel{border:2px solid var(--blu);background:rgba(0,160,255,.08);box-shadow:0 0 12px rgba(0,160,255,.15)}
+    .sel-box::before{position:absolute;top:-20px;left:0;font-size:9px;padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:1px;white-space:nowrap}
+    .sel-box.dist-sel::before{content:'DISTANCE';background:var(--grn);color:#000}
+    .sel-box.dir-sel::before{content:'DIRECTION';background:var(--blu);color:#000}
+    .vid-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:6px 16px;background:rgba(0,0,0,.8);border-radius:20px;font-size:11px;color:var(--t3);white-space:nowrap;pointer-events:none;z-index:4}
+    .vid-hint b{color:var(--grn)}
+    .presets-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+    .pre-btn{padding:7px 13px;background:rgba(255,255,255,.03);border:1px solid var(--brd);color:var(--t3);border-radius:20px;font-size:11px;cursor:pointer;transition:all .15s;font-weight:500}
+    .pre-btn:hover{border-color:var(--grn);color:var(--grn);background:var(--ga)}
+    .pre-btn.dng:hover{border-color:var(--red);color:var(--red);background:var(--rg)}
+    .cap-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+    .cap-item{background:#05050c;border:1px solid var(--brd);border-radius:var(--rs);padding:10px}
+    .cap-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:600}
+    .cap-item canvas{display:block;width:100%;height:70px;background:#030308;border-radius:4px;image-rendering:pixelated}
+    .res-display{background:#050510;border:2px solid var(--brd);border-radius:var(--r);padding:24px;text-align:center;transition:all .3s;position:relative;overflow:hidden}
+    .res-display::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s}
+    .res-display.red{border-color:var(--red)}.res-display.red::before{background:radial-gradient(ellipse at center,var(--rg),transparent 70%);opacity:1}
+    .res-display.yellow{border-color:var(--yel)}.res-display.yellow::before{background:radial-gradient(ellipse at center,var(--yg),transparent 70%);opacity:1}
+    .res-display.green{border-color:var(--grn)}.res-display.green::before{background:radial-gradient(ellipse at center,var(--gg),transparent 70%);opacity:1}
+    .res-num{font-size:56px;font-weight:900;font-family:'Consolas',monospace;line-height:1;position:relative;z-index:1}
+    .res-num.red{color:var(--red)}.res-num.yellow{color:var(--yel)}.res-num.green{color:var(--grn)}
+    .res-num.none{color:var(--t3);font-size:15px;font-weight:500}
+    .res-num.loose{color:var(--red);font-size:28px;animation:flash .7s infinite}
+    @keyframes flash{0%,100%{opacity:1}50%{opacity:.4}}
+    .res-lbl{font-size:13px;font-weight:700;margin-top:8px;letter-spacing:4px;text-transform:uppercase;position:relative;z-index:1}
+    .res-lbl.red{color:var(--red)}.res-lbl.yellow{color:var(--yel)}.res-lbl.green{color:var(--grn)}.res-lbl.loose{color:var(--red);letter-spacing:6px}
+    .dbg{display:grid;gap:0;margin-top:14px;background:#06060e;border-radius:var(--rs);overflow:hidden;border:1px solid var(--brd)}
+    .dbg-r{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid #0c0c18;font-size:11px;font-family:'Consolas',monospace}
+    .dbg-r:last-child{border-bottom:none}
+    .dbg-k{color:var(--t3);font-weight:500}.dbg-v{color:var(--t2);text-align:right;max-width:220px;word-break:break-all}
+    .dbg-v.ok{color:var(--grn)}.dbg-v.warn{color:var(--yel)}.dbg-v.bad{color:var(--red)}
+    .state-hero{text-align:center;padding:28px 20px;border-radius:var(--r);border:3px solid var(--brd);transition:all .3s;background:var(--card);position:relative;overflow:hidden}
+    .state-hero::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s}
+    .state-hero.red{border-color:var(--red)}.state-hero.red::before{background:radial-gradient(ellipse at center,var(--rg),transparent 70%);opacity:1}
+    .state-hero.yellow{border-color:var(--yel)}.state-hero.yellow::before{background:radial-gradient(ellipse at center,var(--yg),transparent 70%);opacity:1}
+    .state-hero.green{border-color:var(--grn)}.state-hero.green::before{background:radial-gradient(ellipse at center,var(--gg),transparent 70%);opacity:1}
+    .st-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:3px;font-weight:600;position:relative;z-index:1}
+    .st-big{font-size:44px;font-weight:900;font-family:'Consolas',monospace;margin:10px 0 6px;position:relative;z-index:1}
+    .st-big.red{color:var(--red)}.st-big.yellow{color:var(--yel)}.st-big.green{color:var(--grn)}.st-big.off{color:#1a1a30}.st-big.loose{color:var(--red);font-size:28px;animation:flash .7s infinite}
+    .st-dist{font-size:18px;font-family:monospace;color:var(--t3);position:relative;z-index:1}
+    .thr-bar{display:flex;gap:4px;margin-top:16px;position:relative;z-index:1}
+    .thr-i{flex:1;padding:7px;border-radius:4px;text-align:center;font-size:10px;font-weight:700}
+    .thr-i.ri{background:var(--rg);color:var(--red)}.thr-i.yi{background:var(--yg);color:var(--yel)}.thr-i.gi{background:var(--gg);color:var(--grn)}
+    .srow{display:flex;align-items:center;gap:10px;margin-bottom:13px}
+    .srow label{font-size:11px;color:var(--t3);min-width:60px;font-weight:500}
+    .srow input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:#1a1a30;border-radius:2px;outline:none}
+    .srow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--grn);border-radius:50%;cursor:pointer;box-shadow:0 0 6px var(--ga)}
+    .srow .sv{font-size:11px;color:var(--t3);min-width:35px;text-align:right;font-family:monospace;font-weight:600}
+    .srow select{flex:1;padding:8px 10px;background:#0c0c18;border:1px solid var(--brd);color:var(--t2);border-radius:var(--rs);font-size:11px;outline:none;cursor:pointer}
+    .tgl{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;color:var(--t2);cursor:pointer}
+    .tgl input[type=checkbox]{width:16px;height:16px;accent-color:var(--grn);cursor:pointer}
+    .btn-row{display:flex;gap:8px;margin-top:10px}
+    .btn{flex:1;padding:9px 12px;background:rgba(255,255,255,.03);border:1px solid var(--brd);color:var(--t3);border-radius:var(--rs);font-size:11px;cursor:pointer;transition:all .15s;font-weight:600}
+    .btn:hover{border-color:var(--grn);color:var(--grn)}.btn.act{border-color:var(--grn);color:var(--grn);background:var(--ga)}
+    .vstatus{margin-top:10px;padding:8px 12px;background:#06060e;border-radius:var(--rs);font-size:11px;text-align:center;font-family:monospace;min-height:28px}
+    .vstatus.ok{color:var(--grn)}.vstatus.err{color:var(--red)}.vstatus.talk{color:var(--yel)}
+    .dir-result{margin-top:12px;padding:14px;background:#06060e;border:1px solid var(--brd);border-radius:var(--rs);text-align:center}
+    .dir-detected{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+    .dir-value{font-size:22px;font-weight:800;color:var(--blu);font-family:'Consolas',monospace;letter-spacing:2px}
+    .dir-value.none{color:var(--t3);font-size:13px;font-weight:400}
+    .dir-raw{margin-top:8px;font-size:10px;color:var(--t3);font-family:monospace;word-break:break-all}
+    .dir-callout{margin-top:10px;padding:8px;background:var(--rg);border:1px solid rgba(255,61,80,.3);border-radius:4px;font-size:12px;color:var(--red);font-weight:600;text-align:center}
+    .dir-manual{margin-top:12px}
+    .dir-manual select{width:100%;padding:8px 10px;background:#0c0c18;border:1px solid var(--brd);color:var(--t2);border-radius:var(--rs);font-size:11px;outline:none}
+    .badge{padding:4px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.5px}
+    .badge.load{background:#1a1500;color:var(--yel)}.badge.rdy{background:#001a0f;color:var(--grn)}.badge.fail{background:#1a0008;color:var(--red)}
+    .info-c{background:var(--ga);border:1px solid rgba(0,232,120,.2);border-radius:var(--rs);padding:12px;margin-top:14px;font-size:11px;color:var(--grn);line-height:1.8}
+    .info-c span{opacity:.7}
+    .log-c{background:#04040a;border:1px solid var(--brd);border-radius:var(--rs);padding:10px 12px;max-height:80px;overflow-y:auto;font-family:'Consolas',monospace;font-size:10px;margin:0 16px 16px}
+    .log-c div{padding:2px 0;color:var(--t3)}.log-c .lg{color:var(--grn)}.log-c .le{color:var(--red)}.log-c .lw{color:var(--yel)}
+    .hidden{display:none!important}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#222240;border-radius:2px}
+    .remote-container{padding:20px;max-width:600px;margin:0 auto}
+    .remote-hero{text-align:center;padding:50px 30px;border-radius:16px;border:4px solid var(--brd);background:var(--card);position:relative;overflow:hidden;transition:all .4s;margin-bottom:20px}
+    .remote-hero::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .4s}
+    .remote-hero.red{border-color:var(--red)}.remote-hero.red::before{background:radial-gradient(ellipse at center,var(--rg),transparent 70%);opacity:1}
+    .remote-hero.yellow{border-color:var(--yel)}.remote-hero.yellow::before{background:radial-gradient(ellipse at center,var(--yg),transparent 70%);opacity:1}
+    .remote-hero.green{border-color:var(--grn)}.remote-hero.green::before{background:radial-gradient(ellipse at center,var(--gg),transparent 70%);opacity:1}
+    .remote-state{font-size:72px;font-weight:900;font-family:'Consolas',monospace;position:relative;z-index:1}
+    .remote-state.red{color:var(--red)}.remote-state.yellow{color:var(--yel)}.remote-state.green{color:var(--grn)}.remote-state.off{color:#1a1a30}
+    .remote-state.loose{color:var(--red);font-size:36px;animation:flash .7s infinite}
+    .remote-dist{font-size:28px;font-family:monospace;color:var(--t3);margin-top:10px;position:relative;z-index:1}
+    .remote-dir{font-size:16px;color:var(--blu);margin-top:8px;position:relative;z-index:1;font-weight:600;letter-spacing:2px}
+    .remote-time{font-size:10px;color:var(--t3);margin-top:12px;position:relative;z-index:1}
+    .conn-status{text-align:center;padding:10px;border-radius:var(--rs);font-size:11px;margin-bottom:16px;font-weight:600}
+    .conn-status.connected{background:var(--gg);color:var(--grn)}
+    .conn-status.waiting{background:var(--yg);color:var(--yel)}
+    .conn-status.disconnected{background:var(--rg);color:var(--red)}
+    .room-display{text-align:center;margin-bottom:16px;padding:12px;background:var(--card);border:1px solid var(--brd);border-radius:var(--rs)}
+    .room-display .room-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+    .room-display .room-code{font-size:24px;font-weight:900;font-family:'Consolas',monospace;color:var(--grn);letter-spacing:6px}
+    .room-input-area{display:flex;gap:8px;margin-bottom:16px}
+    .room-input-area input{flex:1;padding:12px 16px;background:#0c0c18;border:2px solid var(--brd);color:var(--t1);border-radius:var(--rs);font-size:16px;font-family:'Consolas',monospace;text-align:center;letter-spacing:4px;text-transform:uppercase;outline:none}
+    .room-input-area input:focus{border-color:var(--grn)}
+    .room-input-area input::placeholder{color:var(--t3);letter-spacing:2px;font-size:13px}
+    .room-input-area button{padding:12px 24px;background:var(--ga);border:2px solid var(--grn);color:var(--grn);border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px}
+    .server-status{text-align:center;padding:6px 12px;font-size:10px;color:var(--t3);font-family:monospace}
+    .server-status.ok{color:var(--grn)}.server-status.err{color:var(--red)}.server-status.warn{color:var(--yel)}
+    .remote-clients{font-size:11px;color:var(--t3);text-align:center;margin-top:4px}
+    .remote-clients b{color:var(--grn)}
+    .latency-display{font-size:10px;color:var(--t3);text-align:center;margin-top:8px;font-family:monospace}
+    .latency-display b{color:var(--grn)}
+    .latency-display b.slow{color:var(--yel)}
+    .latency-display b.bad{color:var(--red)}
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="hero-t">ORION</div>
+  <div class="hero-s">DISTANCE TRACKING SYSTEM</div>
+  <div class="role-selector">
+    <button class="role-btn" onclick="chooseRole('host')">
+      <div class="role-icon">🖥️</div>HOST
+      <div class="role-sub">Screen capture + OCR</div>
+    </button>
+    <button class="role-btn" onclick="chooseRole('remote')">
+      <div class="role-icon">📱</div>REMOTE
+      <div class="role-sub">View status from another device</div>
+    </button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="hostSetup">
+  <div class="hero-t">ORION</div>
+  <div class="hero-s">HOST MODE</div>
+  <div class="room-display">
+    <div class="room-label">Your Room Code</div>
+    <div class="room-code" id="hostRoomCode">——</div>
+  </div>
+  <div class="server-status warn" id="hostServerStatus">Connecting to relay...</div>
+  <div class="remote-clients" id="hostClientCount"></div>
+  <button class="start-btn" id="startBtn">SHARE<br>SCREEN</button>
+  <div class="start-info">
+    Share the room code with your teammate.<br>
+    They open <b>this same URL</b> and join as <b>REMOTE</b>.<br><br>
+    <div class="ex-box"><span class="na">EnemyPlayer </span><span class="br">(</span><span class="nm">428</span><span class="br">)</span></div><br>
+    <span class="r">RED ≤400</span> · <span class="y">YEL 401-500</span> · <b>GRN >500</b><br>
+    <b>?</b> detected → <span class="r">BALL LOOSE</span>
+  </div>
+</div>
+
+<div class="overlay hidden" id="remoteSetup">
+  <div class="hero-t">ORION</div>
+  <div class="hero-s">REMOTE MODE</div>
+  <div style="max-width:400px;width:100%">
+    <div class="room-input-area">
+      <input type="text" id="remoteRoomInput" placeholder="ROOM CODE" maxlength="6" autocomplete="off">
+      <button onclick="joinRoom()">JOIN</button>
+    </div>
+    <div class="server-status warn" id="remoteServerStatus">Connecting to relay...</div>
+    <div style="text-align:center;color:var(--t3);font-size:12px;margin-top:8px">Enter the room code shown on the host device</div>
+  </div>
+</div>
+
+<nav class="navbar hidden" id="navbar">
+  <div class="nav-brand"><div class="nav-logo">O</div>ORION</div>
+  <div class="nav-pills">
+    <span id="resLabel" style="font-size:11px;color:var(--t3);font-family:monospace">—</span>
+    <div class="pill off" id="navPill"><span class="dot"></span><span id="pillTxt">OFFLINE</span></div>
+  </div>
+</nav>
+
+<div class="app hidden" id="mainUI">
+<div class="main-col">
+  <div class="card">
+    <div class="card-h"><span>📺 Screen Capture</span><span class="room-display" style="padding:4px 12px;margin:0;background:transparent;border:1px solid var(--grn);border-radius:12px"><span style="font-size:9px;color:var(--t3)">ROOM </span><span style="font-size:12px;color:var(--grn);font-weight:700;font-family:monospace;letter-spacing:2px" id="hostRoomCodeSmall">——</span></span></div>
+    <div class="card-b">
+      <div class="mode-bar">
+        <button class="mode-btn act-dist" id="modeDistBtn" onclick="setMode('distance')"><span class="mdot"></span>📍 Distance</button>
+        <button class="mode-btn" id="modeDirBtn" onclick="setMode('direction')"><span class="mdot"></span>🧭 Direction</button>
+      </div>
+      <div class="video-container" id="videoContainer">
+        <video id="vid" playsinline muted></video>
+        <div class="drag-overlay" id="dragArea"></div>
+        <div class="sel-box dist-sel" id="distBox"></div>
+        <div class="sel-box dir-sel" id="dirBox"></div>
+        <div class="vid-hint" id="vidHint">Draw a <b>distance</b> box around <b>enemy name (number)</b></div>
+      </div>
+      <div class="presets-row">
+        <button class="pre-btn" onclick="setPreset('topLeft')">Top-Left</button>
+        <button class="pre-btn" onclick="setPreset('topCenter')">Top-Center</button>
+        <button class="pre-btn" onclick="setPreset('topRight')">Top-Right</button>
+        <button class="pre-btn" onclick="setPreset('center')">Center</button>
+        <button class="pre-btn" onclick="setPreset('bottom')">Bottom</button>
+        <button class="pre-btn dng" onclick="clearSel()">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><span>🔍 OCR Engine</span><span class="badge load" id="ocrBadge">LOADING</span></div>
+    <div class="card-b">
+      <div class="cap-grid">
+        <div class="cap-item"><div class="cap-lbl">📷 Captured</div><canvas id="rawCvs"></canvas></div>
+        <div class="cap-item"><div class="cap-lbl">⚙️ Processed</div><canvas id="procCvs"></canvas></div>
+      </div>
+      <div class="res-display" id="resultBox">
+        <div class="res-num none" id="resultNum">Select a region to begin</div>
+        <div class="res-lbl" id="resultLbl"></div>
+      </div>
+      <div class="dbg">
+        <div class="dbg-r"><span class="dbg-k">Raw OCR</span><span class="dbg-v" id="dbgRaw">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Lines</span><span class="dbg-v" id="dbgLines">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Bracket</span><span class="dbg-v" id="dbgBracket">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Number</span><span class="dbg-v" id="dbgNum">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Confidence</span><span class="dbg-v" id="dbgConf">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Strategy</span><span class="dbg-v" id="dbgStrat">—</span></div>
+        <div class="dbg-r"><span class="dbg-k">Region</span><span class="dbg-v" id="dbgReg">—</span></div>
+      </div>
+      <div class="info-c">
+        <span>✓</span> Finds numbers inside ( ) or [ ] brackets<br>
+        <span>✓</span> Any <b>?</b> → <b>BALL LOOSE</b><br>
+        <span>✓</span> Instant sync via WebSocket relay
+      </div>
+    </div>
+  </div>
+</div>
+<div class="side">
+  <div class="state-hero" id="stateBox">
+    <div class="st-lbl">Current State</div>
+    <div class="st-big off" id="stateVal">—</div>
+    <div class="st-dist" id="stateDist">Waiting...</div>
+    <div class="thr-bar">
+      <div class="thr-i ri">RED ≤400</div>
+      <div class="thr-i yi">YEL 401-500</div>
+      <div class="thr-i gi">GRN >500</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><span>🔊 Voice Alerts</span></div>
+    <div class="card-b">
+      <div class="srow"><label>Volume</label><input type="range" id="volR" min="0" max="1" step="0.1" value="0.8"><span class="sv" id="volV">80%</span></div>
+      <div class="srow"><label>Speed</label><input type="range" id="spdR" min="0.7" max="1.5" step="0.1" value="1"><span class="sv" id="spdV">1.0x</span></div>
+      <div class="srow"><label>Interval</label><input type="range" id="repR" min="1" max="5" step="0.5" value="2"><span class="sv" id="repV">2.0s</span></div>
+      <div class="srow"><label>Voice</label><select id="voiceSel"></select></div>
+      <div class="btn-row">
+        <button class="btn" onclick="testVoice()">🎙 Test</button>
+        <button class="btn act" id="muteBtn" onclick="toggleMute()">🔊 On</button>
+      </div>
+      <div class="vstatus" id="voiceLine"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><span>🧭 Direction Callout</span></div>
+    <div class="card-b">
+      <label class="tgl"><input type="checkbox" id="dirChk" onchange="toggleDir()"> Enable auto-direction on RED</label>
+      <div id="dirUI" class="hidden">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.7">Switch to <b style="color:var(--blu)">🧭 Direction Box</b> and draw around the direction text.</div>
+        <div class="dir-result" id="dirResult">
+          <div class="dir-detected">Detected Direction</div>
+          <div class="dir-value none" id="dirValue">No direction box set</div>
+          <div class="dir-raw" id="dirRawText"></div>
+        </div>
+        <div class="dir-callout hidden" id="dirCallout">Callout: Red behind</div>
+        <div class="dir-manual">
+          <div style="font-size:10px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Manual override</div>
+          <select id="dirManual" onchange="manualDir(this.value)">
+            <option value="">— Auto from OCR —</option>
+            <option value="behind">Behind</option>
+            <option value="in front">In Front</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="above">Above</option>
+            <option value="below">Below</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><span>⚙️ OCR Settings</span></div>
+    <div class="card-b">
+      <div class="srow"><label>Threshold</label><input type="range" id="thrR" min="20" max="235" value="128"><span class="sv" id="thrV">128</span></div>
+      <div class="srow"><label>Scale</label><input type="range" id="sclR" min="2" max="8" step="1" value="4"><span class="sv" id="sclV">4x</span></div>
+      <label class="tgl"><input type="checkbox" id="invChk"> Invert (light text on dark bg)</label>
+      <label class="tgl"><input type="checkbox" id="autoChk" checked> Auto-detect threshold</label>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="hidden" id="remoteUI">
+  <nav class="navbar">
+    <div class="nav-brand"><div class="nav-logo">O</div>ORION <span style="font-size:10px;color:var(--t3);letter-spacing:1px;margin-left:8px">REMOTE</span></div>
+    <div class="nav-pills">
+      <div class="pill" id="remotePill"><span class="dot"></span><span id="remotePillTxt">CONNECTING</span></div>
+    </div>
+  </nav>
+  <div class="remote-container">
+    <div class="conn-status waiting" id="connStatus">Connecting to host...</div>
+    <div class="room-display">
+      <div class="room-label">Connected Room</div>
+      <div class="room-code" id="remoteRoomDisplay">——</div>
+    </div>
+    <div class="latency-display" id="latencyDisplay"></div>
+    <div class="remote-hero" id="remoteHero">
+      <div class="remote-state off" id="remoteState">WAITING</div>
+      <div class="remote-dist" id="remoteDist">—</div>
+      <div class="remote-dir" id="remoteDir"></div>
+      <div class="remote-time" id="remoteTime"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span>🔊 Voice Alerts</span></div>
+      <div class="card-b">
+        <div class="srow"><label>Volume</label><input type="range" id="rVolR" min="0" max="1" step="0.1" value="0.8"><span class="sv" id="rVolV">80%</span></div>
+        <div class="srow"><label>Speed</label><input type="range" id="rSpdR" min="0.7" max="1.5" step="0.1" value="1"><span class="sv" id="rSpdV">1.0x</span></div>
+        <div class="srow"><label>Interval</label><input type="range" id="rRepR" min="1" max="5" step="0.5" value="2"><span class="sv" id="rRepV">2.0s</span></div>
+        <div class="srow"><label>Voice</label><select id="rVoiceSel"></select></div>
+        <div class="btn-row">
+          <button class="btn" onclick="rTestVoice()">🎙 Test</button>
+          <button class="btn act" id="rMuteBtn" onclick="rToggleMute()">🔊 On</button>
+        </div>
+        <div class="vstatus" id="rVoiceLine"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="log-c hidden" id="logBox"></div>
+<canvas id="workCvs" style="display:none"></canvas>
+
+<script>
+const $=id=>document.getElementById(id);
+const vid=$('vid'),rawCvs=$('rawCvs'),procCvs=$('procCvs'),workCvs=$('workCvs');
+const rawCtx=rawCvs.getContext('2d'),procCtx=procCvs.getContext('2d');
+const workCtx=workCvs.getContext('2d',{willReadFrequently:true});
+const distBox=$('distBox'),dirBox=$('dirBox'),videoContainer=$('videoContainer');
+
+let role=null,roomCode='',running=false,muted=false,voices=[],ocrWorker=null,ocrReady=false;
+let distRegion=null,dirRegion=null,curState='OFF',lastNum=null,repTimer=null;
+let vidW=0,vidH=0,ocrBusy=false,lastGoodNum=null,lastGoodTime=0,noDetectCount=0;
+let drawMode='distance',detectedDir='',manualDirOverride='',isBallLoose=false,recentReadings=[];
+const MAX_READINGS=5,RED_MAX=400,YEL_MAX=500;
+const DIR_KEYWORDS={behind:'behind',back:'behind',rear:'behind',front:'in front',ahead:'in front',forward:'in front',left:'left',right:'right',above:'above',up:'above',top:'above',below:'below',down:'below',bottom:'below',under:'below'};
+
+// Remote state
+let rMuted=false,rVoices=[],rCurState='OFF',rRepTimer=null,rLastDir='',rLastDist='';
+
+// ════════════════════════════════════════════
+// INSTANT WEBSOCKET RELAY
+// Uses HiveMQ free public MQTT-over-WebSocket broker
+// Latency: ~30-80ms vs ntfy's 1-3 seconds
+// ════════════════════════════════════════════
+
+let mqttWs=null,mqttConnected=false,mqttReconnectTimer=null;
+let mqttClientId='orion-'+Math.random().toString(36).substr(2,9);
+let mqttTopic='';
+let mqttPingInterval=null;
+
+// Minimal MQTT over WebSocket implementation (just pub/sub, QoS 0)
+// This avoids needing a 100KB MQTT library for 3 packet types
+
+function mqttConnect(onConnect,onMessage){
+  if(mqttWs){try{mqttWs.close()}catch(e){}}
+  mqttConnected=false;
+
+  // HiveMQ public broker - free, no auth, WebSocket on 8884
+  const url='wss://broker.hivemq.com:8884/mqtt';
+  log('WS connecting to HiveMQ...','w');
+
+  try{
+    mqttWs=new WebSocket(url,'mqtt');
+    mqttWs.binaryType='arraybuffer';
+  }catch(e){
+    log('WS create failed: '+e.message,'e');
+    scheduleReconnect(onConnect,onMessage);
+    return;
+  }
+
+  mqttWs.onopen=()=>{
+    // Send MQTT CONNECT packet
+    const cid=mqttClientId;
+    const cidLen=cid.length;
+    const remainLen=10+2+cidLen; // variable header(10) + client id length(2) + client id
+    const pkt=new Uint8Array(2+remainLen);
+    let i=0;
+    pkt[i++]=0x10; // CONNECT
+    pkt[i++]=remainLen;
+    // Protocol name "MQTT"
+    pkt[i++]=0;pkt[i++]=4;pkt[i++]=77;pkt[i++]=81;pkt[i++]=84;pkt[i++]=84;
+    pkt[i++]=4; // protocol level 4 (MQTT 3.1.1)
+    pkt[i++]=2; // connect flags: clean session
+    pkt[i++]=0;pkt[i++]=60; // keepalive 60s
+    pkt[i++]=(cidLen>>8)&0xFF;pkt[i++]=cidLen&0xFF;
+    for(let c=0;c<cidLen;c++)pkt[i++]=cid.charCodeAt(c);
+    mqttWs.send(pkt.buffer);
+  };
+
+  mqttWs.onmessage=(evt)=>{
+    const d=new Uint8Array(evt.data);
+    if(!d.length)return;
+    const type=d[0]>>4;
+
+    if(type===2){ // CONNACK
+      mqttConnected=true;
+      log('MQTT connected!','g');
+      if(mqttPingInterval)clearInterval(mqttPingInterval);
+      mqttPingInterval=setInterval(()=>{
+        if(mqttWs&&mqttWs.readyState===1){
+          mqttWs.send(new Uint8Array([0xC0,0x00]).buffer); // PINGREQ
+        }
+      },25000);
+      if(onConnect)onConnect();
+    }
+    else if(type===3){ // PUBLISH
+      // Parse topic + payload
+      let idx=1;
+      // Decode remaining length (variable length encoding)
+      let remLen=0,mult=1;
+      do{
+        const b=d[idx++];
+        remLen+=(b&127)*mult;
+        mult*=128;
+        if(!(b&128))break;
+      }while(idx<d.length);
+
+      const topicLen=(d[idx]<<8)|d[idx+1];idx+=2;
+      // skip topic
+      idx+=topicLen;
+      // payload
+      const payload=new TextDecoder().decode(d.slice(idx));
+      if(onMessage)onMessage(payload);
+    }
+    // type 13 = PINGRESP, ignore
+  };
+
+  mqttWs.onclose=()=>{
+    mqttConnected=false;
+    if(mqttPingInterval){clearInterval(mqttPingInterval);mqttPingInterval=null;}
+    log('MQTT disconnected','e');
+    scheduleReconnect(onConnect,onMessage);
+  };
+
+  mqttWs.onerror=(e)=>{
+    log('MQTT error','e');
+  };
+}
+
+function scheduleReconnect(onConnect,onMessage){
+  if(mqttReconnectTimer)return;
+  mqttReconnectTimer=setTimeout(()=>{
+    mqttReconnectTimer=null;
+    mqttConnect(onConnect,onMessage);
+  },2000);
+}
+
+function mqttSubscribe(topic){
+  if(!mqttWs||!mqttConnected)return;
+  mqttTopic=topic;
+  const topicBytes=new TextEncoder().encode(topic);
+  const tLen=topicBytes.length;
+  // SUBSCRIBE: fixed header + packet id(2) + topic length(2) + topic + qos(1)
+  const remainLen=2+2+tLen+1;
+  const pkt=new Uint8Array(2+remainLen);
+  let i=0;
+  pkt[i++]=0x82; // SUBSCRIBE
+  pkt[i++]=remainLen;
+  pkt[i++]=0;pkt[i++]=1; // packet id
+  pkt[i++]=(tLen>>8)&0xFF;pkt[i++]=tLen&0xFF;
+  for(let c=0;c<tLen;c++)pkt[i++]=topicBytes[c];
+  pkt[i++]=0; // QoS 0
+  mqttWs.send(pkt.buffer);
+  log('Subscribed: '+topic,'g');
+}
+
+function mqttPublish(topic,payload){
+  if(!mqttWs||!mqttConnected)return;
+  const topicBytes=new TextEncoder().encode(topic);
+  const payloadBytes=new TextEncoder().encode(payload);
+  const tLen=topicBytes.length;
+  const pLen=payloadBytes.length;
+  const remainLen=2+tLen+pLen;
+
+  // Encode remaining length (variable length)
+  const rlBytes=[];
+  let rl=remainLen;
+  do{
+    let b=rl%128;
+    rl=Math.floor(rl/128);
+    if(rl>0)b|=128;
+    rlBytes.push(b);
+  }while(rl>0);
+
+  const pkt=new Uint8Array(1+rlBytes.length+2+tLen+pLen);
+  let i=0;
+  pkt[i++]=0x30; // PUBLISH QoS 0
+  for(const b of rlBytes)pkt[i++]=b;
+  pkt[i++]=(tLen>>8)&0xFF;pkt[i++]=tLen&0xFF;
+  for(let c=0;c<tLen;c++)pkt[i++]=topicBytes[c];
+  for(let c=0;c<pLen;c++)pkt[i++]=payloadBytes[c];
+  mqttWs.send(pkt.buffer);
+}
+
+function getMqttTopic(code){
+  return 'orion/room/'+code.toLowerCase();
+}
+
+// ════════════════════════════════════════════
+// BROADCAST — INSTANT (no throttle for state changes)
+// ════════════════════════════════════════════
+let lastBroadcastState='',lastBroadcastTime=0;
+
+function broadcastState(state,dist,dir){
+  const now=Date.now();
+  const key=state+'|'+dist+'|'+dir;
+
+  // Always send on state change, throttle same-state to 200ms
+  if(key===lastBroadcastState && now-lastBroadcastTime<200)return;
+  lastBroadcastState=key;
+  lastBroadcastTime=now;
+
+  const payload=JSON.stringify({s:state,d:dist,r:dir,t:now});
+
+  // WebSocket (instant, cross-device)
+  if(mqttConnected){
+    mqttPublish(getMqttTopic(roomCode),payload);
+  }
+
+  // BroadcastChannel (instant, same-device fallback)
+  localBroadcast(state,dist,dir);
+}
+
+// BroadcastChannel for same-device
+let bc=null;
+function initLocalBroadcast(code){
+  try{bc=new BroadcastChannel('orion-room-'+code)}catch(e){}
+  return bc;
+}
+function localBroadcast(state,dist,dir){
+  if(bc)try{bc.postMessage({s:state,d:dist,r:dir,t:Date.now()})}catch(e){}
+}
+
+// ════════════════════════════════════════════
+// ROOM CODE
+// ════════════════════════════════════════════
+function genRoom(){
+  const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r='';for(let i=0;i<5;i++)r+=c[Math.floor(Math.random()*c.length)];
+  return r;
+}
+
+// ════════════════════════════════════════════
+// ROLE SELECTION
+// ════════════════════════════════════════════
+function chooseRole(r){
+  role=r;
+  $('overlay').classList.add('hidden');
+  if(r==='host'){
+    roomCode=genRoom();
+    $('hostRoomCode').textContent=roomCode;
+    $('hostRoomCodeSmall').textContent=roomCode;
+    $('hostSetup').classList.remove('hidden');
+    initLocalBroadcast(roomCode);
+
+    $('hostServerStatus').textContent='Connecting to WebSocket relay...';
+    $('hostServerStatus').className='server-status warn';
+
+    mqttConnect(()=>{
+      $('hostServerStatus').textContent='✓ WebSocket relay connected (~50ms latency)';
+      $('hostServerStatus').className='server-status ok';
+      // Subscribe to own topic to verify
+      mqttSubscribe(getMqttTopic(roomCode));
+    },(msg)=>{
+      // Host receives its own messages (echo) - ignore
+    });
+
+    log('Host mode. Room: '+roomCode,'g');
+  }else{
+    $('remoteSetup').classList.remove('hidden');
+    $('remoteServerStatus').textContent='Ready to join';
+    $('remoteServerStatus').className='server-status ok';
+    rLoadVoices();
+  }
+}
+
+function joinRoom(){
+  const code=$('remoteRoomInput').value.trim().toUpperCase();
+  if(code.length<3){alert('Enter the room code from the host device');return}
+  roomCode=code;
+  $('remoteRoomDisplay').textContent=code;
+  $('remoteSetup').classList.add('hidden');
+  $('remoteUI').classList.remove('hidden');
+  $('connStatus').textContent='Connecting to room '+code+'...';
+  $('connStatus').className='conn-status waiting';
+
+  // Connect MQTT and subscribe
+  mqttConnect(()=>{
+    mqttSubscribe(getMqttTopic(code));
+    $('connStatus').textContent='✓ Connected - Waiting for host...';
+    $('connStatus').className='conn-status waiting';
+    $('remotePill').className='pill live';
+    $('remotePillTxt').textContent='CONNECTED';
+  },(msg)=>{
+    // Received message from host!
+    try{
+      const data=JSON.parse(msg);
+      if(data.s!==undefined){
+        // Show latency
+        if(data.t){
+          const lat=Date.now()-data.t;
+          const latEl=$('latencyDisplay');
+          const cls=lat<100?'':'slow';
+          const cls2=lat>500?'bad':cls;
+          latEl.innerHTML='Latency: <b class="'+cls2+'">'+lat+'ms</b>';
+        }
+
+        if(!$('connStatus').classList.contains('connected')){
+          $('connStatus').textContent='✓ LIVE — Receiving host data';
+          $('connStatus').className='conn-status connected';
+          $('remotePill').className='pill live';
+          $('remotePillTxt').textContent='LIVE';
+        }
+        handleRemoteState({state:data.s,dist:data.d,dir:data.r});
+      }
+    }catch(e){}
+  });
+
+  // BroadcastChannel fallback (same device)
+  const lbc=initLocalBroadcast(code);
+  if(lbc){
+    lbc.onmessage=e=>{
+      const data=e.data;
+      if(data.s!==undefined){
+        if($('connStatus').className!=='conn-status connected'){
+          $('connStatus').textContent='✓ LIVE (local)';
+          $('connStatus').className='conn-status connected';
+          $('remotePill').className='pill live';
+          $('remotePillTxt').textContent='LIVE';
+        }
+        handleRemoteState({state:data.s,dist:data.d,dir:data.r});
+      }
+    };
+  }
+
+  rLoadVoices();
+  log('Remote joined room: '+code,'g');
+}
+
+// ════════════════════════════════════════════
+// REMOTE VIEW — instant voice on every state change
+// ════════════════════════════════════════════
+function handleRemoteState(data){
+  const{state,dist,dir}=data;
+  const hero=$('remoteHero'),stEl=$('remoteState'),distEl=$('remoteDist'),dirEl=$('remoteDir'),timeEl=$('remoteTime');
+
+  rLastDir=dir||'';
+  rLastDist=dist||'';
+
+  hero.className='remote-hero';
+  if(state==='BALL LOOSE'){
+    hero.classList.add('red');stEl.textContent='BALL LOOSE';stEl.className='remote-state loose';distEl.textContent='? — No Lock';
+  }else if(state==='RED'){
+    hero.classList.add('red');stEl.textContent='RED';stEl.className='remote-state red';distEl.textContent=dist;
+  }else if(state==='YELLOW'){
+    hero.classList.add('yellow');stEl.textContent='YELLOW';stEl.className='remote-state yellow';distEl.textContent=dist;
+  }else if(state==='GREEN'){
+    hero.classList.add('green');stEl.textContent='GREEN';stEl.className='remote-state green';distEl.textContent=dist;
+  }else{
+    stEl.textContent='WAITING';stEl.className='remote-state off';distEl.textContent='—';
+  }
+
+  dirEl.textContent=dir?('↗ '+dir.toUpperCase()):'';
+  timeEl.textContent='Updated: '+new Date().toLocaleTimeString();
+
+  // INSTANT voice on state change
+  if(state!==rCurState){
+    rCurState=state;
+    const phrase=rGetPhrase(state,dir);
+    if(phrase)rSpeak(phrase,state==='RED'||state==='BALL LOOSE');
+    rStartRep();
+  }
+}
+
+// ── Remote Voice ──
+function rLoadVoices(){
+  const all=speechSynthesis.getVoices();if(!all.length)return;
+  rVoices=all;
+  const s=$('rVoiceSel');if(!s)return;
+  s.innerHTML='';let best=0;
+  rVoices.forEach((v,i)=>{
+    const o=document.createElement('option');o.value=i;
+    o.textContent=v.name.slice(0,30)+' ('+v.lang+')';s.appendChild(o);
+    if(/Google US|David|Samantha|Daniel/i.test(v.name))best=i;
+  });
+  s.value=best;
+}
+speechSynthesis.onvoiceschanged=()=>{loadVoices();rLoadVoices()};
+setTimeout(()=>{loadVoices();rLoadVoices()},100);
+setTimeout(()=>{loadVoices();rLoadVoices()},500);
+setTimeout(()=>{loadVoices();rLoadVoices()},1500);
+setTimeout(()=>{loadVoices();rLoadVoices()},3000);
+
+$('rVolR').oninput=e=>$('rVolV').textContent=Math.round(e.target.value*100)+'%';
+$('rSpdR').oninput=e=>$('rSpdV').textContent=(+e.target.value).toFixed(1)+'x';
+$('rRepR').oninput=e=>{$('rRepV').textContent=(+e.target.value).toFixed(1)+'s';rStartRep()};
+
+function rSpeak(text,urgent){
+  if(rMuted)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.volume=+$('rVolR').value;u.rate=+$('rSpdR').value;u.pitch=urgent?1.15:1;
+  if(rVoices.length){
+    const v=rVoices[+$('rVoiceSel').value];if(v)u.voice=v;
+  }
+  u.onstart=()=>{$('rVoiceLine').textContent='🔊 '+text;$('rVoiceLine').className='vstatus talk'};
+  u.onend=()=>{$('rVoiceLine').textContent='✓ '+text;$('rVoiceLine').className='vstatus ok'};
+  u.onerror=()=>{$('rVoiceLine').textContent='⚠ Error';$('rVoiceLine').className='vstatus err'};
+  speechSynthesis.speak(u);
+}
+function rGetPhrase(state,dir){
+  if(state==='BALL LOOSE')return'Ball loose';
+  if(state==='RED')return dir?'Red '+dir:'Red';
+  if(state==='YELLOW')return'Yellow';
+  if(state==='GREEN')return'Green';
+  return'';
+}
+function rTestVoice(){rSpeak('Red behind. Yellow. Green. Ball loose.',false)}
+function rToggleMute(){
+  rMuted=!rMuted;$('rMuteBtn').textContent=rMuted?'🔇 Off':'🔊 On';$('rMuteBtn').classList.toggle('act',!rMuted);
+  if(rMuted){speechSynthesis.cancel();rStopRep()}else{rStartRep()}
+}
+function rStartRep(){
+  rStopRep();if(rMuted||rCurState==='OFF')return;
+  const ms=+$('rRepR').value*1000;
+  rRepTimer=setInterval(()=>{
+    if(rMuted){rStopRep();return}
+    const phrase=rGetPhrase(rCurState,rLastDir);
+    if(phrase)rSpeak(phrase,rCurState==='RED'||rCurState==='BALL LOOSE');
+  },ms);
+}
+function rStopRep(){if(rRepTimer){clearInterval(rRepTimer);rRepTimer=null}}
+
+// ════════════════════════════════════════════
+// HOST — controls
+// ════════════════════════════════════════════
+$('volR').oninput=e=>$('volV').textContent=Math.round(e.target.value*100)+'%';
+$('spdR').oninput=e=>$('spdV').textContent=(+e.target.value).toFixed(1)+'x';
+$('repR').oninput=e=>{$('repV').textContent=(+e.target.value).toFixed(1)+'s';restartRep()};
+$('thrR').oninput=e=>$('thrV').textContent=e.target.value;
+$('sclR').oninput=e=>$('sclV').textContent=e.target.value+'x';
+
+function log(msg,t=''){const ts=new Date().toLocaleTimeString();const c=t==='g'?'lg':t==='e'?'le':t==='w'?'lw':'';$('logBox').innerHTML=`<div class="${c}">${ts} ${msg}</div>`+$('logBox').innerHTML}
+
+function setMode(m){
+  drawMode=m;
+  $('modeDistBtn').className='mode-btn'+(m==='distance'?' act-dist':'');
+  $('modeDirBtn').className='mode-btn'+(m==='direction'?' act-dir':'');
+  $('vidHint').innerHTML=m==='distance'?'Draw a <b>distance</b> box around <b>enemy name (number)</b>':'Draw a <b style="color:var(--blu)">direction</b> box around <b style="color:var(--blu)">direction text</b>';
+}
+function toggleDir(){const on=$('dirChk').checked;$('dirUI').classList.toggle('hidden',!on);if(!on){dirRegion=null;dirBox.classList.remove('show');detectedDir='';updateDirDisplay()}}
+function manualDir(v){manualDirOverride=v;updateDirDisplay()}
+function getActiveDir(){return manualDirOverride||detectedDir}
+function updateDirDisplay(){
+  const d=getActiveDir(),dv=$('dirValue');
+  if(d){dv.textContent=d.toUpperCase();dv.className='dir-value';$('dirCallout').textContent='Callout: Red '+d;$('dirCallout').classList.remove('hidden')}
+  else if(dirRegion){dv.textContent='Scanning...';dv.className='dir-value none';$('dirCallout').classList.add('hidden')}
+  else{dv.textContent='No direction box set';dv.className='dir-value none';$('dirCallout').classList.add('hidden')}
+}
+
+function loadVoices(){
+  voices=speechSynthesis.getVoices();if(!voices.length)return;
+  const s=$('voiceSel');s.innerHTML='';let best=0;
+  voices.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=v.name.slice(0,30)+' ('+v.lang+')';s.appendChild(o);if(/Google US|David|Samantha|Daniel/i.test(v.name))best=i});
+  s.value=best;
+}
+
+function speak(text,urgent=false){
+  if(muted||!voices.length)return;speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.volume=+$('volR').value;u.rate=+$('spdR').value;u.pitch=urgent?1.15:1;
+  const v=voices[+$('voiceSel').value];if(v)u.voice=v;
+  u.onstart=()=>{$('voiceLine').textContent='🔊 '+text;$('voiceLine').className='vstatus talk'};
+  u.onend=()=>{$('voiceLine').textContent='✓';$('voiceLine').className='vstatus ok'};
+  speechSynthesis.speak(u);
+}
+function testVoice(){speak('Red behind. Yellow. Green. Ball loose.')}
+function toggleMute(){
+  muted=!muted;$('muteBtn').textContent=muted?'🔇 Off':'🔊 On';$('muteBtn').classList.toggle('act',!muted);
+  if(muted){speechSynthesis.cancel();stopRep()}
+}
+function getPhrase(state){
+  if(state==='BALL LOOSE')return'Ball loose';
+  if(state==='RED'){const d=getActiveDir();if($('dirChk').checked&&d)return'Red '+d;return'Red'}
+  if(state==='YELLOW')return'Yellow';if(state==='GREEN')return'Green';return'';
+}
+function startRep(){stopRep();if(muted||curState==='OFF')return;const ms=+$('repR').value*1000;repTimer=setInterval(()=>{if(!muted&&curState!=='OFF')speak(getPhrase(curState),curState==='RED'||curState==='BALL LOOSE')},ms)}
+function stopRep(){if(repTimer){clearInterval(repTimer);repTimer=null}}
+function restartRep(){if(curState!=='OFF')startRep()}
+
+// ── CAPTURE ──
+$('startBtn').onclick=async()=>{
+  try{
+    const stream=await navigator.mediaDevices.getDisplayMedia({video:{cursor:'never'},audio:false});
+    vid.srcObject=stream;await vid.play();
+    await new Promise(r=>vid.readyState>=1?r():vid.onloadedmetadata=r);
+    vidW=vid.videoWidth;vidH=vid.videoHeight;
+    $('resLabel').textContent=vidW+'×'+vidH;
+    videoContainer.style.aspectRatio=`${vidW}/${vidH}`;
+    stream.getVideoTracks()[0].onended=()=>{
+      running=false;$('hostSetup').classList.remove('hidden');$('navbar').classList.add('hidden');
+      $('mainUI').classList.add('hidden');$('logBox').classList.add('hidden');
+      $('navPill').className='pill off';$('pillTxt').textContent='OFFLINE';
+      curState='OFF';stopRep();
+    };
+    running=true;
+    $('hostSetup').classList.add('hidden');$('navbar').classList.remove('hidden');
+    $('mainUI').classList.remove('hidden');$('logBox').classList.remove('hidden');
+    $('navPill').className='pill live';$('pillTxt').textContent='LIVE';
+    log(`Capture: ${vidW}×${vidH}`,'g');
+    speak('Screen shared.');initOCR();ocrLoop();
+  }catch(e){log('Error: '+e.message,'e')}
+};
+
+// ── SELECTION ──
+let dragging=false,sx=0,sy=0,activeBox=null;
+function getPos(e){const r=videoContainer.getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))}}
+
+$('dragArea').onmousedown=e=>{
+  dragging=true;const p=getPos(e);sx=p.x;sy=p.y;
+  activeBox=(drawMode==='direction')?dirBox:distBox;
+  activeBox.style.left=(p.x*100)+'%';activeBox.style.top=(p.y*100)+'%';
+  activeBox.style.width='0';activeBox.style.height='0';
+  activeBox.classList.add('show','dragging');
+};
+document.onmousemove=e=>{
+  if(!dragging||!activeBox)return;const p=getPos(e);
+  const x=Math.min(sx,p.x),y=Math.min(sy,p.y),w=Math.abs(p.x-sx),h=Math.abs(p.y-sy);
+  activeBox.style.left=(x*100)+'%';activeBox.style.top=(y*100)+'%';
+  activeBox.style.width=(w*100)+'%';activeBox.style.height=(h*100)+'%';
+};
+document.onmouseup=e=>{
+  if(!dragging||!activeBox)return;dragging=false;activeBox.classList.remove('dragging');
+  const p=getPos(e);
+  const x=Math.min(sx,p.x),y=Math.min(sy,p.y),w=Math.abs(p.x-sx),h=Math.abs(p.y-sy);
+  if(w<0.005||h<0.003){activeBox.classList.remove('show');if(drawMode==='distance'){distRegion=null;resetDistDisplay()}else{dirRegion=null;detectedDir='';updateDirDisplay()}activeBox=null;return}
+  const reg={x,y,w,h};
+  if(drawMode==='distance'){distRegion=reg;recentReadings=[];lastGoodNum=null;noDetectCount=0;isBallLoose=false;log(`Dist region: ${Math.round(w*vidW)}×${Math.round(h*vidH)}px`,'g')}
+  else{dirRegion=reg;log(`Dir region: ${Math.round(w*vidW)}×${Math.round(h*vidH)}px`,'g');updateDirDisplay()}
+  activeBox.classList.add('show');activeBox=null;
+};
+
+function clearSel(){
+  distRegion=null;dirRegion=null;distBox.classList.remove('show');dirBox.classList.remove('show');
+  resetDistDisplay();detectedDir='';updateDirDisplay();recentReadings=[];lastGoodNum=null;noDetectCount=0;isBallLoose=false;curState='OFF';stopRep();
+}
+function resetDistDisplay(){
+  $('resultNum').textContent='Select a region to begin';$('resultNum').className='res-num none';
+  $('resultLbl').textContent='';$('resultBox').className='res-display';
+  $('stateBox').className='state-hero';$('stateVal').className='st-big off';$('stateVal').textContent='—';$('stateDist').textContent='Waiting...';
+  ['dbgRaw','dbgLines','dbgBracket','dbgNum','dbgConf','dbgStrat','dbgReg'].forEach(id=>{$(id).textContent='—';$(id).className='dbg-v'});
+}
+function setPreset(name){
+  const presets={topLeft:[.01,.01,.25,.06],topCenter:[.30,.01,.40,.06],topRight:[.65,.01,.30,.06],center:[.30,.45,.40,.10],bottom:[.25,.90,.50,.08]};
+  const p=presets[name];if(!p)return;
+  distRegion={x:p[0],y:p[1],w:p[2],h:p[3]};
+  distBox.style.left=(p[0]*100)+'%';distBox.style.top=(p[1]*100)+'%';distBox.style.width=(p[2]*100)+'%';distBox.style.height=(p[3]*100)+'%';
+  distBox.classList.add('show');recentReadings=[];lastGoodNum=null;noDetectCount=0;isBallLoose=false;
+}
+
+// ── OCR ──
+async function initOCR(){
+  const b=$('ocrBadge');b.textContent='LOADING';b.className='badge load';
+  try{
+    if(typeof Tesseract==='undefined')await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';s.onload=res;s.onerror=()=>rej(new Error('fail'));document.head.appendChild(s)});
+    ocrWorker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status!=='recognizing text')b.textContent=m.status.toUpperCase()}});
+    await ocrWorker.setParameters({tessedit_char_whitelist:'0123456789()[]?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz _-.|',tessedit_pageseg_mode:'6'});
+    ocrReady=true;b.textContent='✓ READY';b.className='badge rdy';log('OCR ready','g');
+  }catch(e){b.textContent='✗ FAIL';b.className='badge fail';log('OCR err: '+e.message,'e')}
+}
+
+async function ocrLoop(){
+  while(running){
+    if(ocrReady&&!ocrBusy){
+      if(distRegion)await doDistOCR();
+      if($('dirChk').checked&&dirRegion&&!ocrBusy)await doDirOCR();
+    }
+    await new Promise(r=>setTimeout(r,150));
+  }
+}
+
+function getScale(pw,ph){const b=+$('sclR').value,m=Math.max(pw,ph);if(m<100)return b;if(m<300)return Math.max(2,Math.min(b,3));return Math.max(1,Math.min(b,2))}
+
+function captureRegion(reg){
+  const px=Math.round(reg.x*vidW),py=Math.round(reg.y*vidH);
+  const pw=Math.max(1,Math.round(reg.w*vidW)),ph=Math.max(1,Math.round(reg.h*vidH));
+  const sc=getScale(pw,ph),sw=pw*sc,sh=ph*sc;
+  workCvs.width=sw;workCvs.height=sh;workCtx.imageSmoothingEnabled=true;workCtx.imageSmoothingQuality='high';
+  workCtx.drawImage(vid,px,py,pw,ph,0,0,sw,sh);
+  return{px,py,pw,ph,sw,sh};
+}
+
+function processImg(img){
+  const d=img.data,thr=+$('thrR').value,inv=$('invChk').checked,autoT=$('autoChk').checked;
+  let useThr=thr;
+  if(autoT){
+    const h=new Array(256).fill(0);for(let i=0;i<d.length;i+=4){const g=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]);h[g]++}
+    const tot=d.length/4;let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];
+    let sB=0,wB=0,wF=0,mx=0,best=thr;
+    for(let t=0;t<256;t++){wB+=h[t];if(!wB)continue;wF=tot-wB;if(!wF)break;sB+=t*h[t];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>mx){mx=v;best=t}}
+    useThr=best;
+  }
+  for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];let v=g>useThr?255:0;if(inv)v=255-v;d[i]=d[i+1]=d[i+2]=v}
+}
+
+function hasQuestionMark(raw,lines){
+  if(raw.includes('?'))return true;
+  for(const l of lines)if(l.includes('?'))return true;
+  return false;
+}
+
+async function doDistOCR(){
+  ocrBusy=true;
+  try{
+    const c=captureRegion(distRegion);
+    $('dbgReg').textContent=c.pw+'×'+c.ph+'px';$('dbgReg').className=c.pw>400||c.ph>200?'dbg-v warn':'dbg-v ok';
+    rawCvs.width=Math.min(c.pw,400);rawCvs.height=Math.min(c.ph,100);rawCtx.imageSmoothingEnabled=false;
+    rawCtx.drawImage(vid,c.px,c.py,c.pw,c.ph,0,0,rawCvs.width,rawCvs.height);
+    const img=workCtx.getImageData(0,0,c.sw,c.sh);processImg(img);workCtx.putImageData(img,0,0);
+    procCvs.width=Math.min(c.sw,400);procCvs.height=Math.min(c.sh,100);procCtx.imageSmoothingEnabled=false;
+    procCtx.drawImage(workCvs,0,0,procCvs.width,procCvs.height);
+    const psm=(c.pw>300||c.ph>150)?'6':'7';
+    await ocrWorker.setParameters({tessedit_char_whitelist:'0123456789()[]?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz _-.|',tessedit_pageseg_mode:psm});
+    const res=await ocrWorker.recognize(workCvs);
+    const raw=res.data.text.trim(),conf=Math.round(res.data.confidence);
+    $('dbgRaw').textContent=raw?`"${raw.substring(0,80)}"`:'(empty)';
+    $('dbgConf').textContent=conf+'%';$('dbgConf').className=conf>=60?'dbg-v ok':conf>=30?'dbg-v warn':'dbg-v bad';
+    const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    $('dbgLines').textContent=lines.length+': '+lines.map(l=>`"${l}"`).join(', ').substring(0,100);
+
+    if(hasQuestionMark(raw,lines)){
+      $('dbgNum').textContent='? → BALL LOOSE';$('dbgNum').className='dbg-v bad';
+      $('dbgBracket').textContent='?';$('dbgBracket').className='dbg-v bad';
+      $('dbgStrat').textContent='question-mark';$('dbgStrat').className='dbg-v warn';
+      isBallLoose=true;lastNum=null;
+      $('resultNum').textContent='BALL LOOSE';$('resultNum').className='res-num loose';
+      $('resultLbl').textContent='NO LOCK';$('resultLbl').className='res-lbl loose';$('resultBox').className='res-display red';
+      applyState('BALL LOOSE','?');ocrBusy=false;return;
+    }
+    isBallLoose=false;
+
+    let num=null,strat='none';
+    for(const l of lines){const n=findBracket(l);if(n!==null){num=n;strat='bracket-line';break}}
+    if(num===null){const n=findBracket(raw);if(n!==null){num=n;strat='bracket-full'}}
+    if(num===null&&res.data.words){const n=findFromWords(res.data.words);if(n!==null){num=n;strat='word-level'}}
+    if(num===null){for(const l of lines){const n=findAny(l);if(n!==null){num=n;strat='any-line';break}}}
+    if(num===null){const n=findAny(raw);if(n!==null){num=n;strat='any-full'}}
+
+    $('dbgBracket').textContent=(strat.startsWith('bracket')&&num!==null)?num:'None';
+    $('dbgBracket').className=(strat.startsWith('bracket')&&num!==null)?'dbg-v ok':'dbg-v warn';
+    $('dbgStrat').textContent=strat;$('dbgStrat').className=num!==null?'dbg-v ok':'dbg-v bad';
+
+    if(num!==null){
+      num=stabilize(num);$('dbgNum').textContent=num;$('dbgNum').className='dbg-v ok';
+      lastNum=num;lastGoodNum=num;lastGoodTime=Date.now();noDetectCount=0;
+      const st=getState(num);
+      $('resultNum').textContent=num;$('resultNum').className='res-num '+st.toLowerCase();
+      $('resultLbl').textContent=st;$('resultLbl').className='res-lbl '+st.toLowerCase();
+      $('resultBox').className='res-display '+st.toLowerCase();
+      applyState(st,num);
+    }else{noDetectCount++;$('dbgNum').textContent='Not found';$('dbgNum').className='dbg-v bad'}
+  }catch(e){log('OCR err: '+e.message,'e')}
+  ocrBusy=false;
+}
+
+async function doDirOCR(){
+  ocrBusy=true;
+  try{
+    const c=captureRegion(dirRegion);
+    const img=workCtx.getImageData(0,0,c.sw,c.sh);processImg(img);workCtx.putImageData(img,0,0);
+    await ocrWorker.setParameters({tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 0123456789',tessedit_pageseg_mode:'7'});
+    const res=await ocrWorker.recognize(workCvs);
+    const raw=res.data.text.trim().toLowerCase();
+    $('dirRawText').textContent=raw?'OCR: "'+raw.substring(0,60)+'"':'';
+    if(!manualDirOverride){
+      let found='';for(const[k,v]of Object.entries(DIR_KEYWORDS))if(raw.includes(k)){found=v;break}
+      if(found!==detectedDir){detectedDir=found;if(found)log('Dir: '+found,'g');updateDirDisplay();if(curState==='RED')restartRep()}
+    }
+  }catch(e){log('Dir err: '+e.message,'e')}
+  ocrBusy=false;
+}
+
+function findBracket(text){
+  if(!text)return null;
+  for(const p of[/\((\d{1,4})\)/,/\[(\d{1,4})\]/,/\((\d{1,4})\s*\)/,/\(\s*(\d{1,4})\)/]){const m=text.match(p);if(m&&m[1]){const n=parseInt(m[1],10);if(n>=10&&n<=9999)return n}}
+  let cl=text.replace(/\{/g,'(').replace(/\}/g,')').replace(/\[/g,'(').replace(/\]/g,')').replace(/\|/g,'1');
+  cl=cl.replace(/\(([^)]*)\)/g,(_,inner)=>{let f=inner.replace(/[oO]/g,'0').replace(/[lI|!]/g,'1').replace(/[sS$]/g,'5').replace(/[zZ]/g,'2').replace(/[Bb]/g,'8').replace(/[gG]/g,'9').replace(/[Aa@]/g,'4').replace(/[qQ]/g,'9').replace(/\s/g,'');return'('+f+')'});
+  for(const p of[/\((\d{1,4})\)/,/\(\s*(\d{1,4})\s*\)/]){const m=cl.match(p);if(m&&m[1]){const n=parseInt(m[1],10);if(n>=10&&n<=9999)return n}}
+  for(const p of[/\((\d{1,4})(?:\s|$|[^0-9])/,/(?:^|[^0-9])(\d{1,4})\)/,/\(([^)]{1,6})\)/]){const m=cl.match(p);if(m&&m[1]){const d=m[1].replace(/[^0-9]/g,'');if(d.length>=2&&d.length<=4){const n=parseInt(d,10);if(n>=10&&n<=9999)return n}}}
+  return null;
+}
+function findFromWords(words){
+  if(!words||!words.length)return null;
+  for(let i=0;i<words.length;i++){const t=words[i].text.trim();const bn=findBracket(t);if(bn!==null)return bn;const d=t.replace(/[^0-9]/g,'');if(d.length>=2&&d.length<=4){const n=parseInt(d,10);if(n>=10&&n<=9999){if(i>0){const pr=words[i-1].text.trim();if(pr.endsWith('(')||pr==='(')return n}if(i<words.length-1){const nx=words[i+1].text.trim();if(nx.startsWith(')')||nx===')')return n}}}}
+  for(const w of words){const d=w.text.trim().replace(/[^0-9]/g,'');if(d.length>=2&&d.length<=4&&w.confidence>50){const n=parseInt(d,10);if(n>=10&&n<=9999)return n}}
+  return null;
+}
+function findAny(text){
+  if(!text)return null;
+  let cl=text.replace(/[oOQ]/g,'0').replace(/[lIi|!]/g,'1').replace(/[sS$]/g,'5').replace(/[zZ]/g,'2').replace(/[Bb]/g,'8').replace(/[gG]/g,'9').replace(/[Aa@]/g,'4');
+  const ms=cl.match(/\d{2,4}/g);if(!ms)return null;
+  const cands=[];for(const m of ms){const n=parseInt(m,10);if(n>=10&&n<=9999)cands.push(n)}
+  if(!cands.length)return null;
+  if(lastGoodNum!==null&&(Date.now()-lastGoodTime)<5000){let best=cands[0],bd=Math.abs(cands[0]-lastGoodNum);for(let i=1;i<cands.length;i++){const df=Math.abs(cands[i]-lastGoodNum);if(df<bd){bd=df;best=cands[i]}}return best}
+  return cands[0];
+}
+function stabilize(num){
+  recentReadings.push(num);if(recentReadings.length>MAX_READINGS)recentReadings.shift();
+  if(recentReadings.length>=3){const sorted=[...recentReadings].sort((a,b)=>a-b);const med=sorted[Math.floor(sorted.length/2)];if(Math.abs(num-med)/med>.5){const near=recentReadings.filter(r=>Math.abs(r-med)/med<.2).length;if(near>=2)return med}}
+  return num;
+}
+function getState(n){if(n<=RED_MAX)return'RED';if(n<=YEL_MAX)return'YELLOW';return'GREEN'}
+
+function applyState(state,dist){
+  const dir=getActiveDir();
+
+  // INSTANT broadcast — no throttle on state changes
+  broadcastState(state,dist,$('dirChk').checked?dir:'');
+
+  if(state==='BALL LOOSE'){
+    $('stateBox').className='state-hero red';$('stateVal').className='st-big loose';$('stateVal').textContent='BALL LOOSE';$('stateDist').textContent='? — No Lock';
+    if(curState!=='BALL LOOSE'){log(curState+' → BALL LOOSE','w');curState='BALL LOOSE';speak('Ball loose',true);startRep()}return;
+  }
+  const sl=state.toLowerCase();
+  $('stateBox').className='state-hero '+sl;$('stateVal').className='st-big '+sl;$('stateVal').textContent=state;$('stateDist').textContent=dist;
+  if(state!==curState){log(curState+' → '+state+' ('+dist+')','w');curState=state;speak(getPhrase(state),state==='RED');startRep()}
+}
+
+setInterval(()=>{if(speechSynthesis.paused)speechSynthesis.resume()},5000);
+log('ORION ready.');
+</script>
+</body>
+</html>
